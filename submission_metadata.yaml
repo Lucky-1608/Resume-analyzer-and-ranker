@@ -1,51 +1,36 @@
-# India Runs — Data & AI Challenge (Track 1) — Submission Metadata
+﻿# India Runs — Data & AI Challenge (Track 1) — Submission Metadata
 # Mirrors the portal submission form as required by Section 10.2
 
-# ============================================================================
-# Team identity
-# ============================================================================
 team_name: "Agentron"
 
 primary_contact:
   name: "Saketh Suman Bathini"
   email: "sakethsumanbathini@gmail.com"
-  phone: "8686744405"
+  phone: "+91 8686744405"
 
 team_members:
   - name: "Saketh Suman Bathini"
     email: "sakethsumanbathini@gmail.com"
-    role: "ML / AI Engineer"
+    role: "ML / AI Engineer — pipeline architecture, ranking system, evaluation"
+  - name: "Saisharath Chandran Andnetha"
+    email: "saisharathchandranandnetha@gmail.com"
+    role: "Data Engineer — candidate data processing, feature engineering"
+  - name: "Vuppala Hrishikesh"
+    email: "vuppalahrishikesh16@gmail.com"
+    role: "AI Researcher — model validation, proxy evaluation, testing"
 
-# ============================================================================
-# Code and reproducibility
-# ============================================================================
 github_repo: "https://github.com/Lucky-1608/Resume-analyzer-and-ranker"
 
 sandbox_link: "https://colab.research.google.com/github/Lucky-1608/Resume-analyzer-and-ranker/blob/main/sandbox/India_Runs_Sandbox.ipynb"
 
-# Exact command that regenerates submission.csv from the candidates file:
 reproduce_command: "python run_submission.py --candidates data/candidates.jsonl --jd data/job_description.docx --out submission.csv"
 
-# ============================================================================
-# Compute environment
-# ============================================================================
 compute_environment: "Windows 11 Home (25H2), Intel Core i5-12500H 2.50GHz, 16GB RAM, Python 3.13.5, CPU-only (no GPU used during ranking)"
 
-# ============================================================================
-# AI tools declaration (honest, per Section 10.4 — not penalized)
-# ============================================================================
 ai_tools_used:
   - "Claude (Anthropic) — architecture design, code review, research on RRF/IsolationForest, debugging"
   - "ChatGPT (OpenAI) — ideation and approach validation"
 
-# Note: All engineering decisions, implementation, testing, and validation were
-# done by the team. AI tools were used as a development aid, not as the ranking
-# system itself. The ranking pipeline makes zero LLM API calls at inference time
-# (pure scikit-learn + python-docx, CPU-only, no network during ranking).
-
-# ============================================================================
-# Methodology summary (<=200 words, strongly recommended per Section 10.2)
-# ============================================================================
 methodology_summary: |
   We built a deterministic, constraint-safe candidate ranking system using a
   three-signal Reciprocal Rank Fusion (RRF, Cormack 2009, k=60) architecture:
@@ -56,24 +41,16 @@ methodology_summary: |
   (2) TF-IDF cosine relevance of candidate text to the JD; and (3) an evidence
   coherence score (skills-vs-career-description TF-IDF cosine) that operationalises
   the "says vs means" signal the JD describes.
-
   Honeypot detection runs in two stages: hard logical-impossibility rules (single
   job longer than total career, expert skills with zero usage months, impossible
   calendar overlaps) followed by Isolation Forest on consistency-residual features.
   142 of ~80+ honeypots are flagged; 0 appear in the top 100.
-
   All ranking is CPU-only, no network, no hosted LLM. The pipeline is deterministic
   across runs and hash seeds (byte-identical output verified). Runtime ~150s,
   memory ~2.5GB, both well within contest limits.
 
-# ============================================================================
-# Signals coverage
-# ============================================================================
 signals_used: "23/23 documented Redrob signals"
 
-# ============================================================================
-# Key architecture decisions
-# ============================================================================
 architecture:
   retrieval: "TF-IDF cosine (sklearn, sublinear_tf=True) over 100K candidate texts"
   fusion: "Reciprocal Rank Fusion (k=60) of rule score (w=2.0), TF-IDF (w=1.0), evidence coherence (w=0.8)"
@@ -81,9 +58,6 @@ architecture:
   tiebreaker: "Quality key (band centrality, skill breadth, shipper evidence, Pune/Noida, assessments)"
   determinism: "Sorted-iteration throughout; IsolationForest with fixed random_state; PYTHONHASHSEED=0 in Dockerfile"
 
-# ============================================================================
-# Self-evaluation (proxy NDCG, independent JD-derived ground truth)
-# ============================================================================
 proxy_evaluation:
   ndcg_at_10: 0.9448
   ndcg_at_50: 0.9251
