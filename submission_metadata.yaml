@@ -1,0 +1,106 @@
+# India Runs — Data & AI Challenge (Track 1) — Submission Metadata
+# Fill in the TODO fields before submitting.
+
+# ============================================================================
+# Team identity
+# ============================================================================
+team_name: "TODO_YOUR_TEAM_NAME"          # TODO
+
+primary_contact:
+  name: "Saketh Suman Bathini"
+  email: "sakethsumanbathini@gmail.com"
+  phone: "TODO_PHONE"                      # TODO
+
+team_members:
+  - name: "Saketh Suman Bathini"
+    email: "sakethsumanbathini@gmail.com"
+    role: "ML / AI Engineer"
+
+# ============================================================================
+# Code and reproducibility
+# ============================================================================
+github_repo: "TODO_https://github.com/<you>/Resume-analyzer-and-ranker"   # TODO
+sandbox_link: "TODO_link_to_colab_or_hf_space"                            # TODO
+
+# Exact command that regenerates submission.csv from the candidates file:
+reproduce_command: "python run_submission.py --candidates data/candidates.jsonl --jd data/job_description.docx --out submission.csv"
+
+# ============================================================================
+# Compute environment (offline ranking; no GPU, no network during ranking)
+# ============================================================================
+compute:
+  platform: "Local CPU box"
+  cpu_cores: 8
+  ram_gb: 16
+  python_version: "3.13"
+  os: "Windows 11 / Linux"
+  uses_gpu_for_inference: false
+  has_network_during_ranking: false
+  pre_computation_required: false
+  pre_computation_time_minutes: 0
+  approx_runtime_seconds_100k: 125
+
+# ============================================================================
+# AI tools declaration
+# ============================================================================
+ai_tools_used:
+  - "Claude (Anthropic) — used as a coding assistant to design and debug the pipeline"
+
+ai_usage_summary: |
+  An AI coding assistant was used for code review, debugging, and refactoring of
+  the ranking pipeline (determinism, JD parsing, honeypot logic, reasoning
+  generation). No candidate data was sent to any external model. All ranking runs
+  fully offline on CPU with no network access.
+
+# ============================================================================
+# Approach summary (matches the actual code in this repo)
+# ============================================================================
+methodology_summary: |
+  Deterministic, offline, rule-based scoring pipeline (no LLM at ranking time):
+
+  1) Job Intelligence: parses job_description.docx, builds a weighted skill
+     vocabulary (7 families) and an experience band (5-9y) from the JD text.
+  2) Candidate Parser: extracts skills (with proficiency / endorsements /
+     assessment scores), career history with dates/durations, education tiers,
+     and Redrob signals into a normalized profile + text blob.
+  3) Hybrid Retriever: deterministic TF-IDF cosine similarity over the candidate
+     text, combined with weighted JD-skill keyword coverage (60/40 blend).
+  4) Feature Engineer: technical_fit (regex skill-family match weighted by
+     proficiency/endorsements/assessment), production/shipper signal, an
+     experience-fit curve that peaks inside the JD band and down-weights
+     over-senior or very-junior profiles, behavioral and recruitability signals.
+  5) Trust + Honeypot: an evidence/consistency trust score, and a honeypot
+     detector that flags impossible timelines (e.g. senior title with <2y total,
+     skill duration exceeding career length, invalid education years).
+  6) Ensemble Scorer: weighted blend (technical .40, retrieval .25,
+     production_ml .15, career .10, trust .10), multiplied by a behavioral factor
+     and damped by honeypot probability.
+  7) Explanation Engine: generates a grounded, candidate-specific reasoning string
+     per top candidate (varied structure, cites that candidate's real roles/skills).
+
+  Determinism: all vocabulary iterations are sorted so floating-point sums do not
+  depend on Python's hash seed; two independent full runs on 100k candidates are
+  byte-for-byte identical. Output is rounded then sorted by score (descending)
+  with candidate_id ascending as the tie-break, matching the submission spec.
+
+# ============================================================================
+# Declarations
+
+  Beyond skill matching, the ranker also models: (a) career-history evidence of
+  production ML / retrieval / ranking work (the "says vs means" test), (b) a
+  disqualifier engine that down-weights JD-named anti-fits (services-only careers,
+  off-domain roles, stopped-coding seniors, vision/speech-without-NLP,
+  research-only, title-chasers), (c) location fit (Pune/Noida/Hyderabad/Mumbai/
+  Delhi-NCR preferred; outside-India down-weighted, softened by relocation
+  willingness), (d) an availability/engagement multiplier folding all 23 Redrob
+  behavioral signals, and (e) a small external-validation bonus (open-source,
+  papers, education tier, certifications).
+
+# ============================================================================
+declarations:
+  read_submission_spec: true
+  code_is_original_work: true
+  no_collusion: true
+  honeypot_check_done: true
+  reproduction_tested: true
+signals_used: 23/23
