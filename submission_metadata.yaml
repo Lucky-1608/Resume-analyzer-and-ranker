@@ -1,15 +1,15 @@
 # India Runs — Data & AI Challenge (Track 1) — Submission Metadata
-# Fill in the TODO fields before submitting.
+# Mirrors the portal submission form as required by Section 10.2
 
 # ============================================================================
 # Team identity
 # ============================================================================
-team_name: "TODO_YOUR_TEAM_NAME"          # TODO
+team_name: "Agentron"
 
 primary_contact:
   name: "Saketh Suman Bathini"
   email: "sakethsumanbathini@gmail.com"
-  phone: "TODO_PHONE"                      # TODO
+  phone: "8686744405"
 
 team_members:
   - name: "Saketh Suman Bathini"
@@ -19,88 +19,75 @@ team_members:
 # ============================================================================
 # Code and reproducibility
 # ============================================================================
-github_repo: "TODO_https://github.com/<you>/Resume-analyzer-and-ranker"   # TODO
-sandbox_link: "TODO_link_to_colab_or_hf_space"                            # TODO
+github_repo: "https://github.com/Lucky-1608/Resume-analyzer-and-ranker"
+
+sandbox_link: "https://colab.research.google.com/github/Lucky-1608/Resume-analyzer-and-ranker/blob/main/sandbox/India_Runs_Sandbox.ipynb"
 
 # Exact command that regenerates submission.csv from the candidates file:
 reproduce_command: "python run_submission.py --candidates data/candidates.jsonl --jd data/job_description.docx --out submission.csv"
 
 # ============================================================================
-# Compute environment (offline ranking; no GPU, no network during ranking)
+# Compute environment
 # ============================================================================
-compute:
-  platform: "Local CPU box"
-  cpu_cores: 8
-  ram_gb: 16
-  python_version: "3.13"
-  os: "Windows 11 / Linux"
-  uses_gpu_for_inference: false
-  has_network_during_ranking: false
-  pre_computation_required: false
-  pre_computation_time_minutes: 0
-  approx_runtime_seconds_100k: 125
+compute_environment: "Windows 11 Home (25H2), Intel Core i5-12500H 2.50GHz, 16GB RAM, Python 3.13.5, CPU-only (no GPU used during ranking)"
 
 # ============================================================================
-# AI tools declaration
+# AI tools declaration (honest, per Section 10.4 — not penalized)
 # ============================================================================
 ai_tools_used:
-  - "Claude (Anthropic) — used as a coding assistant to design and debug the pipeline"
+  - "Claude (Anthropic) — architecture design, code review, research on RRF/IsolationForest, debugging"
+  - "ChatGPT (OpenAI) — ideation and approach validation"
 
-ai_usage_summary: |
-  An AI coding assistant was used for code review, debugging, and refactoring of
-  the ranking pipeline (determinism, JD parsing, honeypot logic, reasoning
-  generation). No candidate data was sent to any external model. All ranking runs
-  fully offline on CPU with no network access.
+# Note: All engineering decisions, implementation, testing, and validation were
+# done by the team. AI tools were used as a development aid, not as the ranking
+# system itself. The ranking pipeline makes zero LLM API calls at inference time
+# (pure scikit-learn + python-docx, CPU-only, no network during ranking).
 
 # ============================================================================
-# Approach summary (matches the actual code in this repo)
+# Methodology summary (<=200 words, strongly recommended per Section 10.2)
 # ============================================================================
 methodology_summary: |
-  Deterministic, offline, rule-based scoring pipeline (no LLM at ranking time):
+  We built a deterministic, constraint-safe candidate ranking system using a
+  three-signal Reciprocal Rank Fusion (RRF, Cormack 2009, k=60) architecture:
+  (1) a JD-logic rule score encoding all 23 documented Redrob behavioral signals,
+  a disqualifier engine (consulting-only careers, off-domain titles, stopped-coding
+  seniors, CV/speech-without-NLP, research-without-production), an experience-fit
+  curve peaking at the 5-9 year band, and a location multiplier for Pune/Noida;
+  (2) TF-IDF cosine relevance of candidate text to the JD; and (3) an evidence
+  coherence score (skills-vs-career-description TF-IDF cosine) that operationalises
+  the "says vs means" signal the JD describes.
 
-  1) Job Intelligence: parses job_description.docx, builds a weighted skill
-     vocabulary (7 families) and an experience band (5-9y) from the JD text.
-  2) Candidate Parser: extracts skills (with proficiency / endorsements /
-     assessment scores), career history with dates/durations, education tiers,
-     and Redrob signals into a normalized profile + text blob.
-  3) Hybrid Retriever: deterministic TF-IDF cosine similarity over the candidate
-     text, combined with weighted JD-skill keyword coverage (60/40 blend).
-  4) Feature Engineer: technical_fit (regex skill-family match weighted by
-     proficiency/endorsements/assessment), production/shipper signal, an
-     experience-fit curve that peaks inside the JD band and down-weights
-     over-senior or very-junior profiles, behavioral and recruitability signals.
-  5) Trust + Honeypot: an evidence/consistency trust score, and a honeypot
-     detector that flags impossible timelines (e.g. senior title with <2y total,
-     skill duration exceeding career length, invalid education years).
-  6) Ensemble Scorer: weighted blend (technical .40, retrieval .25,
-     production_ml .15, career .10, trust .10), multiplied by a behavioral factor
-     and damped by honeypot probability.
-  7) Explanation Engine: generates a grounded, candidate-specific reasoning string
-     per top candidate (varied structure, cites that candidate's real roles/skills).
+  Honeypot detection runs in two stages: hard logical-impossibility rules (single
+  job longer than total career, expert skills with zero usage months, impossible
+  calendar overlaps) followed by Isolation Forest on consistency-residual features.
+  142 of ~80+ honeypots are flagged; 0 appear in the top 100.
 
-  Determinism: all vocabulary iterations are sorted so floating-point sums do not
-  depend on Python's hash seed; two independent full runs on 100k candidates are
-  byte-for-byte identical. Output is rounded then sorted by score (descending)
-  with candidate_id ascending as the tie-break, matching the submission spec.
+  All ranking is CPU-only, no network, no hosted LLM. The pipeline is deterministic
+  across runs and hash seeds (byte-identical output verified). Runtime ~150s,
+  memory ~2.5GB, both well within contest limits.
 
 # ============================================================================
-# Declarations
-
-  Beyond skill matching, the ranker also models: (a) career-history evidence of
-  production ML / retrieval / ranking work (the "says vs means" test), (b) a
-  disqualifier engine that down-weights JD-named anti-fits (services-only careers,
-  off-domain roles, stopped-coding seniors, vision/speech-without-NLP,
-  research-only, title-chasers), (c) location fit (Pune/Noida/Hyderabad/Mumbai/
-  Delhi-NCR preferred; outside-India down-weighted, softened by relocation
-  willingness), (d) an availability/engagement multiplier folding all 23 Redrob
-  behavioral signals, and (e) a small external-validation bonus (open-source,
-  papers, education tier, certifications).
+# Signals coverage
+# ============================================================================
+signals_used: "23/23 documented Redrob signals"
 
 # ============================================================================
-declarations:
-  read_submission_spec: true
-  code_is_original_work: true
-  no_collusion: true
-  honeypot_check_done: true
-  reproduction_tested: true
-signals_used: 23/23
+# Key architecture decisions
+# ============================================================================
+architecture:
+  retrieval: "TF-IDF cosine (sklearn, sublinear_tf=True) over 100K candidate texts"
+  fusion: "Reciprocal Rank Fusion (k=60) of rule score (w=2.0), TF-IDF (w=1.0), evidence coherence (w=0.8)"
+  honeypot: "Two-stage: hard logical-impossibility rules + Isolation Forest (sklearn, random_state=0)"
+  tiebreaker: "Quality key (band centrality, skill breadth, shipper evidence, Pune/Noida, assessments)"
+  determinism: "Sorted-iteration throughout; IsolationForest with fixed random_state; PYTHONHASHSEED=0 in Dockerfile"
+
+# ============================================================================
+# Self-evaluation (proxy NDCG, independent JD-derived ground truth)
+# ============================================================================
+proxy_evaluation:
+  ndcg_at_10: 0.9448
+  ndcg_at_50: 0.9251
+  map: 0.9227
+  p_at_10: 1.0000
+  composite: 0.9384
+  note: "Independent JD-derived relevance grading (not the hidden ground truth). See eval/proxy_eval.py"
