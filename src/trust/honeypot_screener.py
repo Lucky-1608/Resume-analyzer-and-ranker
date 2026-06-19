@@ -40,6 +40,8 @@ class HoneypotScreener:
         sd[sd == 0] = 1.0
         Xs = (X - mu) / sd
 
+        import warnings
+        warnings.filterwarnings("ignore", message="max_samples.*greater than the total")
         from sklearn.ensemble import IsolationForest
         iso = IsolationForest(
             n_estimators=200, max_samples=256,

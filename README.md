@@ -1,5 +1,23 @@
 # Candidate Ranking System — India Runs (Track 1)
 
+
+## Reproduce the submission (single command)
+
+```bash
+python run_submission.py --candidates data/candidates.jsonl --jd data/job_description.docx --out submission.csv
+```
+
+Place `candidates.jsonl` and `job_description.docx` in a `data/` folder first (they are
+not committed — `candidates.jsonl` is ~465 MB). Runs CPU-only, no network, ~150s, ~2.5 GB RAM.
+
+## Sandbox (one-click reproducibility check)
+
+A ready-to-run Google Colab notebook is in [`sandbox/India_Runs_Sandbox.ipynb`](sandbox/India_Runs_Sandbox.ipynb).
+It clones this repo, installs `requirements.txt`, runs the identical pipeline on a bundled
+100-candidate sample (`sandbox/sample_candidates.jsonl`), validates the output, and prints the
+ranked CSV — completing in a few seconds. Open it in Colab and choose *Runtime → Run all*.
+
+
 A deterministic, fully offline candidate ranking pipeline for the India Runs
 Data & AI Challenge. It scores ~100,000 candidates against a job description and
 emits the top 100 as `submission.csv`. No LLM, no GPU, and no network access are
