@@ -222,9 +222,9 @@ flowchart TB
    deterministic ordering.
 
 10. **Explanation Engine** (`src/ranking/explanation_engine.py`) writes a grounded, per-candidate
-    reasoning string citing that candidate's real roles and skills, with varied sentence
-    structure (16 opener templates selected per-candidate; all 100 reasonings unique) —
-    tuned for the Stage-4 manual review.
+    reasoning string citing that candidate's real roles and skills, with rank-aware tone (strong wording at the
+    top, measured "solid/reasonable" in the middle, "partial/adjacent" near the cutoff) and
+    varied sentence structure; all 100 reasonings unique — tuned for the Stage-4 manual review.
 
 11. **Submission Generator** (`src/pipeline/submission_gen.py`) emits exactly 100 rows with
     strictly-decreasing scores, filters malformed IDs, and round-trips through the official validator.

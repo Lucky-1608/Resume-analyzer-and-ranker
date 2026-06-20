@@ -23,7 +23,8 @@ def _r1(x):
 
 
 class ExplanationEngine:
-    def generate_explanation(self, profile, features, honeypot_prob=0.0, dq_tags=None):
+    def generate_explanation(self, profile, features, honeypot_prob=0.0, dq_tags=None,
+                             rank=None, total=100):
         dq_tags = dq_tags or []
         pr = profile.get("profile", {}) or {}
         title = pr.get("current_title") or (profile.get("roles") or ["Professional"])[0]
@@ -49,13 +50,39 @@ class ExplanationEngine:
         # Python's hash(), so it is identical across runs / hash seeds.
         cid = str(profile.get("id", ""))
         vidx = sum((i + 1) * ord(ch) for i, ch in enumerate(cid)) % 3
+
+        # Rank-aware tone: within the top-100 every candidate has high technical
+        # fit, so a pure-score opener would read "Strong" even at rank 100. The
+        # Stage-4 rubric expects tone to track rank (a low-ranked candidate should
+        # not get glowing language). We therefore *cap* the opener tier by rank
+        # band so the bottom of the list reads more measured, while keeping the
+        # language truthful (these are still the top 0.1% of 100K).
+        #   tier 2 = strongest wording, tier 1 = solid/reasonable, tier 0 = adjacent
         if tech >= 0.6:
+            score_tier = 2
+        elif tech >= 0.38:
+            score_tier = 1
+        else:
+            score_tier = 0
+
+        rank_cap = 2
+        if rank is not None and total:
+            frac = rank / float(total)          # 0.0 (best) .. 1.0 (worst)
+            if frac > 0.80:                      # bottom ~20% of the top-100
+                rank_cap = 0
+            elif frac > 0.45:                    # middle band
+                rank_cap = 1
+            else:                                # top ~45%
+                rank_cap = 2
+        tier = min(score_tier, rank_cap)
+
+        if tier >= 2:
             templates = [
                 f"Strong fit: {title} with {_r1(yoe)} yrs and directly relevant {st}",
                 f"{title} ({_r1(yoe)} yrs) is a strong match, with directly relevant {st}",
                 f"Strong candidate — {_r1(yoe)}-yr {title} whose core skills ({st}) map directly to the role",
             ]
-        elif tech >= 0.38:
+        elif tier == 1:
             templates = [
                 f"Solid match: {title} ({_r1(yoe)} yrs) with relevant {st}",
                 f"{title} with {_r1(yoe)} yrs brings relevant {st}",
@@ -125,6 +152,15 @@ class ExplanationEngine:
         # Honeypot flag.
         if honeypot_prob >= 0.5:
             bits.append("profile has timeline inconsistencies (flagged)")
+
+        # Relative-position note for the lower band: keeps the bottom of the list
+        # honest about being near the cutoff without contradicting the real fit.
+        if rank is not None and total and (rank / float(total)) > 0.80 \
+                and honeypot_prob < 0.5 and not dq_tags:
+            if evidence < 0.5 and tech < 0.6:
+                bits.append("included near the cutoff — relevant but a notch below the top tier")
+            else:
+                bits.append("near the lower end of the shortlist")
 
         s = "; ".join(bits) + "."
         return s[0].upper() + s[1:]

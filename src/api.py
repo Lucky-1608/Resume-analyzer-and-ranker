@@ -134,10 +134,12 @@ def rank_candidates(custom_jd_path=None, custom_cand_path=None):
         c["_order"] = _order
         _order += 1
         prev = s
+    _TOP_N = 120
     for i, c in enumerate(profiles):
         c["rank"] = i + 1
-        if i < 120:
+        if i < _TOP_N:
             c["aiFit_explanation"] = ex.generate_explanation(
                 c, fc[c["id"]], c.get("honeypot_prob", 0.0),
-                dq_tags=c.get("dq_tags", []))
+                dq_tags=c.get("dq_tags", []),
+                rank=i + 1, total=min(len(profiles), 100))
     return {"candidates": profiles, "elapsed_time": time.time() - start}
